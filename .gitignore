@@ -7,3 +7,10 @@ __pycache__/
 .idea/
 .vscode/
 output.csv
+linkedin_tokens.json
+oauth_cli.py
+get_member_urn.py
+sanity_gemini_call.py
+sanity_bd_dataset.py
+sanity_env.py
+sanity_gemini_env.py
