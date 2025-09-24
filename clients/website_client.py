@@ -8,7 +8,9 @@ EMAIL_RE = re.compile(r"[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}", re.I)
 PHONE_RE = re.compile(r"(?:(?:\+?\d{1,3}[\s.\-]?)?(?:\(?\d{2,4}\)?[\s.\-]?)?\d{3,4}[\s.\-]?\d{4})")
 COMMON_PATHS = ["", "/contact", "/contact-us", "/contacts", "/about", "/about-us", "/impressum", "/support", "/help"]
 
-class WebsiteScraper:
+class WebsiteClient:
+    """Generic website fetch & contact extraction client."""
+
     def _safe_get(self, url: str) -> str:
         try:
             resp = BROWSER.get(url, timeout=20)
@@ -18,7 +20,7 @@ class WebsiteScraper:
             log.debug(f"[GET] {url} failed: {e}")
         return ""
 
-    def _extract_from_html(self, html: str, base_url: str = "") -> Dict[str, Set[str]]:
+    def _extract_from_html(self, html: str, base_url: str = "") -> Dict[str, Set[str] | str | None]:
         soup = BeautifulSoup(html, "html.parser")
         text = soup.get_text("\n", strip=True)
 
@@ -40,11 +42,7 @@ class WebsiteScraper:
                 contact_link = urljoin(base_url, href)
                 break
 
-        return {
-            "emails": emails,
-            "phones": phones,
-            "contact_link": contact_link
-        }
+        return {"emails": emails, "phones": phones, "contact_link": contact_link}
 
     def _normalize_site(self, url: str) -> str:
         if not url:
@@ -69,19 +67,19 @@ class WebsiteScraper:
             if not html:
                 continue
             found = self._extract_from_html(html, base)
-            emails |= found["emails"]
-            phones |= found["phones"]
+            emails |= found["emails"]  # type: ignore
+            phones |= found["phones"]  # type: ignore
 
         home_html = self._safe_get(site)
         if home_html:
             found = self._extract_from_html(home_html, base)
-            clink = found.get("contact_link")
+            clink = found.get("contact_link")  # type: ignore
             if clink:
-                html = self._safe_get(clink)
+                html = self._safe_get(str(clink))
                 if html:
                     f2 = self._extract_from_html(html, base)
-                    emails |= f2["emails"]
-                    phones |= f2["phones"]
+                    emails |= f2["emails"]  # type: ignore
+                    phones |= f2["phones"]  # type: ignore
 
         clean_emails = sorted({e.strip().strip(".") for e in emails if "@" in e})
         clean_phones = sorted({re.sub(r"\s{2,}", " ", p).strip() for p in phones})
